@@ -1,4 +1,7 @@
 '''
+Auteurs : DEPRES Adrien, GODET Jeanne, PETIT Gildas
+
+Ce programme répond au cahier des charges de la première partie du 3ème projet
 '''
 import csv
 import math
@@ -20,10 +23,12 @@ def kNN(characters, character, k = 5):
                     à considérer
     Sortie :
         - decision : (string) la maison choisie pour le candidat
+        - neighbours : (list) Les k plus proches voisins du profil, ou les gens ayant les profils les plus similaires
     '''
     n = len(characters)
     distances = [[-1] for i in range(n)]
     mindset = ['Courage', 'Ambition', 'Intelligence', 'Good']
+    traduction = {"Gryffindor":"Gryffondor","Ravenclaw":"Serdaigle","Hufflepuff":"Poufsouffle","Slytherin":"Serpentard"}
     for value in mindset:
         character[value] = int(character[value])
 
@@ -32,11 +37,13 @@ def kNN(characters, character, k = 5):
         for value in mindset:
             characters[i][value] = int(characters[i][value])
             s += (character[value] - characters[i][value]) ** 2   
-        distances[i] = [math.sqrt(s),characters[i]["House"]]
+        distances[i] = [math.sqrt(s),characters[i]["House"], characters[i]["Name"]]
     distances.sort(key = lambda x:x[0])
     choice = {"Gryffindor":0, "Ravenclaw":0, "Hufflepuff":0, "Slytherin":0}
+    neighbours = []
     for i in range(k):
         choice[distances[i][1]] += 1
+        neighbours.append([distances[i][2],traduction[distances[i][1]]])
     m = 0
     decision = ""
     for house,count in choice.items():
@@ -48,9 +55,8 @@ def kNN(characters, character, k = 5):
     # qui a demandé gryffondor au choixpeau)
         elif count == m: 
             m,decision = random.choice(((m,decision),(count,house)))
-    traduction = {"Gryffindor":"Gryffondor","Ravenclaw":"Serdaigle","Hufflepuff":"Poufsouffle","Slytherin":"Serpentard"}
     decision = traduction[decision]
-    return decision
+    return decision, neighbours
     
 
 
@@ -58,7 +64,7 @@ def kNN(characters, character, k = 5):
 
 
 
-# import des persos et création, par jointure, de la table utilisée
+# import des persos et création, par jointure, de la table utilisée :
 keys = ['Name', 'Courage', 'Ambition', 'Intelligence', 'Good', 'Gender', 'Job', 'House', 'Wand', 'Patronus', 'Species', 'Blood status', 'Hair colour', 'Eye colour', 'Loyalty', 'Skills', 'Birth', 'Death']
 
 with open("Characters.csv", mode = "r", encoding = "utf-8") as f:
@@ -76,15 +82,15 @@ with open("Caracteristiques_des_persos.csv", mode = "r", encoding = "utf-8") as 
                 characters[-1].update(somebody)
                 del characters[-1]["Id"]
 
-# début du programme                
-#kNN(characters, {'Courage': 2, 'Ambition': 9, 'Intelligence':2, 'Good':9})
+# début du programme :               
+
 def main():
     '''
     Procédure lançant le programme, l'IHM ...
     '''
     k = 5
     if input("Voulez vous choisir une valeur de k ? (y/n):") == "y":
-        k = int(input("rentrer votre valeur de k (entière et positive) :"))
+        k = int(input("Rentrer votre valeur de k (entière et positive) :"))
     elif input("Voulez vous choisir la valeur de k à l'aide d'une validation croisée ? (y/n):") == "y":
         #k = validation_croisee(characters)
         pass
@@ -102,7 +108,12 @@ def main():
             for moral_key,value in profile.items():
                 print(f"{moral_key} : {value}",end=" | ")
             print("")
-            print(f"La maison que le choixpeau magique recommande pour ce profil est {kNN(characters,profile,k)} !")
+            function_call = kNN(characters,profile,k)
+            print(f"La maison que le choixpeau magique recommande pour ce profil est {function_call[0]} !")
+            if input(f"Voulez vous voir les {k} plus proches voisins du profil ? (y/n):") == "y":
+                print("Les élèves ressemblants le plus à ce profil sont :")
+                for guy, house in function_call[1]:
+                   print(f"- {guy} de la Maison {house}") 
             print("")
     else:
         character = dict()
@@ -112,12 +123,20 @@ def main():
             while character[moral_key] == "":
                 try :
                     character[moral_key] = int(input(f"- {moral_key} : "))
+                    if character[moral_key] >= 10:
+                        character[moral_key] = ""
+                        raise "TRICHEUR"
                 except :
-                    print("Rentrez un nombre entier positif !")
-        print(f"La maison que le choixpeau magique recommande pour ce profil est {kNN(characters,character,k)} !")
-    if input("Voulez vous continuez ? (y/n):") == "y":
+                    print("Rentrez un nombre entier positif inférieur ou égal à 9 !")
+        function_call = kNN(characters,character,k)
+        print(f"La maison que le choixpeau magique recommande pour ce profil est {function_call[0]} !")
+        if input(f"Voulez vous voir les {k} plus proches voisins du profil ? (y/n):") == "y":
+                print("Les élèves ressemblants le plus à ce profil sont :")
+                for guy, house in function_call[1]:
+                   print(f"- {guy} de la Maison {house}") 
+    if input("Voulez vous continuer ? (y/n):") == "y":
         main()
     else:
         return None
+
 main()
-            
