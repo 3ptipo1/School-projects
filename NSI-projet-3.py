@@ -127,14 +127,14 @@ def main():
     '''
     k = 5
     traduction = {"Gryffindor":"Gryffondor","Ravenclaw":"Serdaigle","Hufflepuff":"Poufsouffle","Slytherin":"Serpentard"}
-    if input("Voulez vous choisir une valeur de k ? (y/n):") == "y":
+    if input("Voulez vous choisir une valeur de k ? (y/N):") == "y":
         k = int(input("Rentrer votre valeur de k (entière et positive) :"))
-    elif input("Voulez vous choisir la valeur de k à l'aide d'une validation croisée ? (y/n):") == "y":
+    elif input("Voulez vous choisir la valeur de k à l'aide d'une validation croisée ? (y/N):") == "y":
         k = validation_croisee(characters)
 
 
     moral_keys = ['Courage', 'Ambition', 'Intelligence', 'Good']
-    if input("Voulez vous tester les cas d'exemples ? (y/n):") == "y":
+    if input("Voulez vous tester les cas d'exemples ? (y/N):") == "y":
         profiles = [{'Courage': 9, 'Ambition': 2, 'Intelligence':8, 'Good':9},
                     {'Courage': 6, 'Ambition': 7, 'Intelligence':9, 'Good':7},
                     {'Courage': 3, 'Ambition': 8, 'Intelligence':6, 'Good':3},
@@ -148,7 +148,7 @@ def main():
             print("")
             function_call = kNN(characters,profile,k)
             print(f"La maison que le choixpeau magique recommande pour ce profil est {traduction[function_call[0]]} !")
-            if input(f"Voulez vous voir les {k} plus proches voisins du profil ? (y/n):") == "y":
+            if input(f"Voulez vous voir les {k} plus proches voisins du profil ? (y/N):") == "y":
                 print("Les élèves ressemblants le plus à ce profil sont :")
                 for guy, house in function_call[1]:
                     print(f"- {guy} de la Maison {traduction[house]}") 
@@ -168,11 +168,11 @@ def main():
                     print("Rentrez un nombre entier positif inférieur ou égal à 9 !")
         function_call = kNN(characters,character,k)
         print(f"La maison que le choixpeau magique recommande pour ce profil est {traduction[function_call[0]]} !")
-        if input(f"Voulez vous voir les {k} plus proches voisins du profil ? (y/n):") == "y":
+        if input(f"Voulez vous voir les {k} plus proches voisins du profil ? (y/N):") == "y":
             print("Les élèves ressemblants le plus à ce profil sont :")
             for guy, house in function_call[1]:
                 print(f"- {guy} de la Maison {traduction[house]}") 
-    if input("Voulez vous continuer ? (y/n):") != "n":
+    if input("Voulez vous continuer ? (Y/n):") != "n":
         main()
     else:
         return None
