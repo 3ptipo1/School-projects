@@ -7,8 +7,51 @@ import csv
 import math
 import random
 
+def creation_donnees_test(characters):
+    '''
+    Fonction utilisée dans la fonction validation_croisee permettant de choisir aléatoirement un quart de l'échantillon
+    Entrée:
+        - characters : liste de dictionnaires contenants les informations
+                        de chaque élève
+    Sorties:
+        - characters_test : liste de dictionnaires contenants les informations
+                        d'un quart des élèves
+        - copy_characters : liste de dictionnaires contenants les informations
+                        du reste des élèves
+    '''
+    characters_test = []
+    copy_characters = characters[:]
+    for _ in range(len(copy_characters) // 4):
+        characters_test.append(copy_characters.pop(random.randint(0, len(copy_characters) - 1)))
+    return characters_test, copy_characters
+
 def validation_croisee(characters):
-    pass
+    '''
+    Fonction permettant de choisir une valeur de k adaptée à l'échantillon étudié en réalisant une validation croisée
+    Entrée:
+        - characters : liste de dictionnaires contenants les informations
+                        de chaque élève
+    Sortie :
+        - true_k (int) : La valeur de k adaptée 
+    '''
+    nb_tests = 100
+    max_rate = -1
+    true_k = 42
+    for k in range(1, 20):
+        bingo = 0
+        for test in range(nb_tests):
+            characters_test, characters_reference = creation_donnees_test(characters)
+            for character_cible in characters_test:
+                if kNN(characters_reference, character_cible, k)[0] == character_cible['House']:
+                    bingo += 1
+            
+        success_rate = round(bingo / len(characters_test))
+        print(f"Pourcentage de réussite avec k = {k} : {success_rate} %")
+        if success_rate > max_rate:
+            true_k = k
+            max_rate = success_rate
+    print(f"La valeur de k la plus adaptée est adaptée est {true_k}")
+    return true_k
 
 def kNN(characters, character, k = 5):
     '''
@@ -17,7 +60,7 @@ def kNN(characters, character, k = 5):
     k plus proches voisins. (en cas d'égalités : aléatoire)
     Paramètres :
         - characters : liste de dictionnaires contenants les informations
-                        de chaque autres élèves
+                        de chaque élève
         - character : dictionnaire contenant le profil de l'élève à choisir
         - k = 5 : entier, par default à 5, indiquant le nombre de voisins
                     à considérer
@@ -28,7 +71,6 @@ def kNN(characters, character, k = 5):
     n = len(characters)
     distances = [[-1] for i in range(n)]
     mindset = ['Courage', 'Ambition', 'Intelligence', 'Good']
-    traduction = {"Gryffindor":"Gryffondor","Ravenclaw":"Serdaigle","Hufflepuff":"Poufsouffle","Slytherin":"Serpentard"}
     for value in mindset:
         character[value] = int(character[value])
 
@@ -43,7 +85,7 @@ def kNN(characters, character, k = 5):
     neighbours = []
     for i in range(k):
         choice[distances[i][1]] += 1
-        neighbours.append([distances[i][2],traduction[distances[i][1]]])
+        neighbours.append([distances[i][2],distances[i][1]])
     m = 0
     decision = ""
     for house,count in choice.items():
@@ -55,13 +97,8 @@ def kNN(characters, character, k = 5):
     # qui a demandé gryffondor au choixpeau)
         elif count == m: 
             m,decision = random.choice(((m,decision),(count,house)))
-    decision = traduction[decision]
     return decision, neighbours
     
-
-
-
-
 
 
 # import des persos et création, par jointure, de la table utilisée :
@@ -89,11 +126,12 @@ def main():
     Procédure lançant le programme, l'IHM ...
     '''
     k = 5
+    traduction = {"Gryffindor":"Gryffondor","Ravenclaw":"Serdaigle","Hufflepuff":"Poufsouffle","Slytherin":"Serpentard"}
     if input("Voulez vous choisir une valeur de k ? (y/n):") == "y":
         k = int(input("Rentrer votre valeur de k (entière et positive) :"))
     elif input("Voulez vous choisir la valeur de k à l'aide d'une validation croisée ? (y/n):") == "y":
-        #k = validation_croisee(characters)
-        pass
+        k = validation_croisee(characters)
+
 
     moral_keys = ['Courage', 'Ambition', 'Intelligence', 'Good']
     if input("Voulez vous tester les cas d'exemples ? (y/n):") == "y":
@@ -109,11 +147,11 @@ def main():
                 print(f"{moral_key} : {value}",end=" | ")
             print("")
             function_call = kNN(characters,profile,k)
-            print(f"La maison que le choixpeau magique recommande pour ce profil est {function_call[0]} !")
+            print(f"La maison que le choixpeau magique recommande pour ce profil est {traduction[function_call[0]]} !")
             if input(f"Voulez vous voir les {k} plus proches voisins du profil ? (y/n):") == "y":
                 print("Les élèves ressemblants le plus à ce profil sont :")
                 for guy, house in function_call[1]:
-                   print(f"- {guy} de la Maison {house}") 
+                    print(f"- {guy} de la Maison {traduction[house]}") 
             print("")
     else:
         character = dict()
@@ -129,12 +167,12 @@ def main():
                 except :
                     print("Rentrez un nombre entier positif inférieur ou égal à 9 !")
         function_call = kNN(characters,character,k)
-        print(f"La maison que le choixpeau magique recommande pour ce profil est {function_call[0]} !")
+        print(f"La maison que le choixpeau magique recommande pour ce profil est {traduction[function_call[0]]} !")
         if input(f"Voulez vous voir les {k} plus proches voisins du profil ? (y/n):") == "y":
-                print("Les élèves ressemblants le plus à ce profil sont :")
-                for guy, house in function_call[1]:
-                   print(f"- {guy} de la Maison {house}") 
-    if input("Voulez vous continuer ? (y/n):") == "y":
+            print("Les élèves ressemblants le plus à ce profil sont :")
+            for guy, house in function_call[1]:
+                print(f"- {guy} de la Maison {traduction[house]}") 
+    if input("Voulez vous continuer ? (y/n):") != "n":
         main()
     else:
         return None
