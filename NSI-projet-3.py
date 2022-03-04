@@ -7,6 +7,34 @@ import csv
 import math
 import random
 
+
+def purge(characters):
+    '''
+    Fonction utilisée pour harmoniser les proportions d'élèves de chaques maisons en supprimant certains profils de Maisons trop nombreuses
+    /!\ le processus est d'une compléxité qu'on qualifiera de "peu ergonomique" (O(n²))
+    Entrées :
+        - characters : liste de dictionnaires contenants les informations
+                        de chaque élève
+    Sorties :
+        - characters : la même liste mais avec le même nombre de personnes
+                        pour toutes les maisons
+    '''
+    memberships = {"Gryffindor":[], "Ravenclaw":[], "Hufflepuff":[], "Slytherin":[]}
+    for i in range(len(characters)):
+        memberships[characters[i]["House"]].append(i)
+    min_membership = float("inf")
+    for i in memberships.keys():
+        min_membership = min(min_membership, len(memberships[i]))
+    sacrifices = []
+    for i in memberships.keys():
+        sacrifices.extend(random.sample(memberships[i], (len(memberships[i]) - min_membership)))
+    sacrifices.sort(reverse=True)
+    print("On dit au revoir (sniff...) aux pauvres:")
+    for i in sacrifices:
+        print(characters.pop(i)["Name"], end=", ")
+    print("\n")
+    return characters
+
 def creation_donnees_test(characters):
     '''
     Fonction utilisée dans la fonction validation_croisee permettant de choisir aléatoirement un quart de l'échantillon
@@ -62,7 +90,7 @@ def kNN(characters, character, k = 5):
         - characters : liste de dictionnaires contenants les informations
                         de chaque élève
         - character : dictionnaire contenant le profil de l'élève à choisir
-        - k = 5 : entier, par default à 5, indiquant le nombre de voisins
+        - k = 5 : entier, par defaut à 5, indiquant le nombre de voisins
                     à considérer
     Sortie :
         - decision : (string) la maison choisie pour le candidat
@@ -75,64 +103,73 @@ def kNN(characters, character, k = 5):
         character[value] = int(character[value])
 
     for i in range(n):
-        s = 0
+        sum_squared_values = 0
         for value in mindset:
             characters[i][value] = int(characters[i][value])
-            s += (character[value] - characters[i][value]) ** 2   
-        distances[i] = [math.sqrt(s),characters[i]["House"], characters[i]["Name"]]
+            sum_squared_values += (character[value] - characters[i][value]) ** 2   
+        distances[i] = [math.sqrt(sum_squared_values),characters[i]["House"], characters[i]["Name"]]
     distances.sort(key = lambda x:x[0])
     choice = {"Gryffindor":0, "Ravenclaw":0, "Hufflepuff":0, "Slytherin":0}
     neighbours = []
     for i in range(k):
         choice[distances[i][1]] += 1
         neighbours.append([distances[i][2],distances[i][1]])
-    m = 0
+    max_members = 0
     decision = ""
     for house,count in choice.items():
-        if count > m:
-            m = count
+        if count > max_members:
+            max_members = count
             decision = house
     # pour partie 2 possible ajout des preferences de maisons pour departager
     #(comme Harry potter qui aurait pu aller a gryffondor ou serpentard mais
     # qui a demandé gryffondor au choixpeau)
-        elif count == m: 
-            m,decision = random.choice(((m,decision),(count,house)))
+        elif count == max_members: 
+            max_members,decision = random.choice(((max_members,decision),(count,house)))
     return decision, neighbours
     
 
 
 # import des persos et création, par jointure, de la table utilisée :
-keys = ['Name', 'Courage', 'Ambition', 'Intelligence', 'Good', 'Gender', 'Job', 'House', 'Wand', 'Patronus', 'Species', 'Blood status', 'Hair colour', 'Eye colour', 'Loyalty', 'Skills', 'Birth', 'Death']
-
-with open("Characters.csv", mode = "r", encoding = "utf-8") as f:
-    text = csv.DictReader(f, delimiter=';')
-    csv1 = [{key : value for key, value in element.items()} for element in text]
-
-with open("Caracteristiques_des_persos.csv", mode = "r", encoding = "utf-8") as f:
-    text = csv.DictReader(f, delimiter=';')
-    csv2 = [{key : value for key, value in element.items()} for element in text]
-    characters = [] 
-    for element in csv2:
-        for somebody in csv1:
-            if element["Name"] == somebody["Name"]:
-                characters.append(element)
-                characters[-1].update(somebody)
-                del characters[-1]["Id"]
-
-# début du programme :               
-
 def main():
     '''
     Procédure lançant le programme, l'IHM ...
     '''
+    keys = ['Name', 'Courage', 'Ambition', 'Intelligence', 'Good', 'Gender', 'Job', 'House', 'Wand', 'Patronus', 'Species', 'Blood status', 'Hair colour', 'Eye colour', 'Loyalty', 'Skills', 'Birth', 'Death']
+    characters = []
+
+    with open("Characters.csv", mode = "r", encoding = "utf-8") as f:
+        text = csv.DictReader(f, delimiter=';')
+        csv1 = [{key : value for key, value in element.items()} for element in text]
+
+    with open("Caracteristiques_des_persos.csv", mode = "r", encoding = "utf-8") as f:
+        text = csv.DictReader(f, delimiter=';')
+        csv2 = [{key : value for key, value in element.items()} for element in text]
+        characters = [] 
+        for element in csv2:
+            for somebody in csv1:
+                if element["Name"] == somebody["Name"]:
+                    characters.append(element)
+                    characters[-1].update(somebody)
+                    del characters[-1]["Id"]
+
+# début du programme :              
     k = 5
     traduction = {"Gryffindor":"Gryffondor","Ravenclaw":"Serdaigle","Hufflepuff":"Poufsouffle","Slytherin":"Serpentard"}
+    if input("Voulez vous harmoniser la table de données (par suppression) ? (y/N): ") == "y":
+        characters = purge(characters)
     if input("Voulez vous choisir une valeur de k ? (y/N):") == "y":
-        k = int(input("Rentrer votre valeur de k (entière et positive) :"))
+        while True:
+            try:
+                k = min(int(input("Entrez votre valeur de k : ")), len(characters))
+                if k < 0:
+                    print("Il faut un entier positif !")
+                    continue
+                break            
+            except:
+                print("Il faut un entier !")
     elif input("Voulez vous choisir la valeur de k à l'aide d'une validation croisée ? (y/N):") == "y":
         k = validation_croisee(characters)
-
-
+            
     moral_keys = ['Courage', 'Ambition', 'Intelligence', 'Good']
     if input("Voulez vous tester les cas d'exemples ? (y/N):") == "y":
         profiles = [{'Courage': 9, 'Ambition': 2, 'Intelligence':8, 'Good':9},
@@ -161,7 +198,7 @@ def main():
             while character[moral_key] == "":
                 try :
                     character[moral_key] = int(input(f"- {moral_key} : "))
-                    if character[moral_key] >= 10:
+                    if character[moral_key] >= 10 or character[moral_key] < 0:
                         character[moral_key] = ""
                         raise "TRICHEUR"
                 except :
