@@ -172,12 +172,12 @@ def main():
             
     moral_keys = ['Courage', 'Ambition', 'Intelligence', 'Good']
     if input("Voulez vous tester les cas d'exemples ? (y/N):") == "y":
-        profiles = [{'Courage': 9, 'Ambition': 2, 'Intelligence':8, 'Good':9},
+        PROFILES = ({'Courage': 9, 'Ambition': 2, 'Intelligence':8, 'Good':9},
                     {'Courage': 6, 'Ambition': 7, 'Intelligence':9, 'Good':7},
                     {'Courage': 3, 'Ambition': 8, 'Intelligence':6, 'Good':3},
                     {'Courage': 2, 'Ambition': 3, 'Intelligence':7, 'Good':8},
-                    {'Courage': 3, 'Ambition': 4, 'Intelligence':8, 'Good':8}]
-        for profile in profiles:
+                    {'Courage': 3, 'Ambition': 4, 'Intelligence':8, 'Good':8})
+        for profile in PROFILES:
             print("")
             print("Pour un élève ayant les caractéristiques suivantes :")
             for moral_key,value in profile.items():
