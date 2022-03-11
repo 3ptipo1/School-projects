@@ -85,7 +85,7 @@ def validation_croisee(characters):
                 ):
                     bingo += 1
 
-        success_rate = round(bingo / len(characters_test))
+        success_rate = round(bingo / len(characters_test),2)
         print(f"Pourcentage de réussite avec k = {k} : {success_rate} %")
         if success_rate > max_rate:
             true_k = k
