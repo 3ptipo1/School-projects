@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<!--
+    Auteurs : DEPRES Adrien, GODET Jeanne, PETIT Gildas
+
+    Ce programme répond au cahier des charges de la deuxième partie du 3ème projet,
+    en créant la page HTML
+-->
+<html lang="fr">
+<html>
+    <head>
+
+        <meta charset="UTF-8" />
+        <title>Projet de NSI, Choixpeau Magique</title>
+        <script type="text/javascript"
+            src="https://cdn.jsdelivr.net/npm/brython@3.10.5/brython.min.js">
+        </script>
+        <script type="text/javascript"
+            src="https://cdn.jsdelivr.net/npm/brython@3.10.5/brython_stdlib.js">
+        </script>
+        <script type="text/python" src="brython-projet.py"></script>
+        <link rel="stylesheet" href="CSS_Choixpeau.css" >
+
+    <body onload="brython()">
+
+        <noscript><center><img src="https://i.imgflip.com/6b4r5z.jpg" /> </center></noscript>
+        
+        <div id = "zone_titre">
+            <h1> 
+                <p> Bienvenue sur notre questionnaire ! <br>
+                 Apprends à quelle maison tu appartiens ! </p>
+            <h1>
+        </div>
+
+        <div id="gauche">
+            <div id = "zone_interaction">
+                <h2>
+                <p>  Pour réaliser ce test, cliquez sur "Commencer", puis veuillez, pour chaque question, sélectionner la réponse qui vous convient</p>
+                <p> L'algorithme des KPPV vous attribuera ensuite une maison ! </p>
+                
+                    <button class="button button2", id="bouton_debut">Commencer</button>
+            
+                </h2>
+            </div>
+            
+        </div>
+
+        <div id="droite">
+
+            <div id = "zone_image">
+                <img src= "https://www.margxt.fr/wp-content/uploads/2020/06/Sorting-Hat-foundable.png" alt="Image_Choixpeau" height=300>
+            
+            </div>
+
+            <div id ="zone_progression">
+                <progress id="progression" max="20" value="1" ></progress>
+            </div>
+            
+        </div>
+           
+    </body>
+</html>
