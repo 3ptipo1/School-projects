@@ -1,7 +1,11 @@
 import pygame
+import random
 pygame.init()
 
 def change_image(x,y):
+    change = [(x,y)]
+    if vu[x][y]:
+        return []
     if grille_flag[x][y]:
         grille_rect[x][y][0] = 0 #mettre une image de drapeau
     elif grille_bomb[x][y] != -1:
@@ -16,42 +20,63 @@ def change_image(x,y):
             for coord2 in range(dimensions[1]):
                 if grille_flag[coord1][coord2] and grille_bomb[coord1][coord2] != -1:
                     grille_rect[coord1][coord2][0] = 0 #mettre image bombe pas la
+                    change.append((coord1,coord2))
                 elif grille_bomb[coord1][coord2] == -1 and not grille_flag[coord1][coord2]:
                     grille_rect[coord1][coord2][0] = 0#mettre image bombe
+                    change.append((coord1,coord2))
+    return change
+
+
+
+def decouverte(x,y):
+    pass
+
+
+def set_mines(pos, nb_mine):
+    for i in range(nb_mine):
+        x,y = random.randint(0, dimensions[0]), random.randint(0, dimensions[1])
+        c = 0
+        a_cote = True if   
+        while (x,y) == pos or grille_bomb[x][y] == -1 or a_cote:
+            x,y = random.randint(0, dimensions[0]), random.randint(0, dimensions[1])
+            c += 1
+            assert c >= 100, "Il y a peut etre trop de bombes..."
+        grille_bomb[x][y] = -1
+
         
 
 
 
-def decouverte(x,y, dimensions):
-    pass
 
 
 
+def main():
+    dimensions = [9,9]
+    nb_mine = 10
+
+    bord_g = 20
+    bord_h = 100
+
+    size = width, height = bord_g * 2 + dimensions[0] * 24, bord_g + bord_h + dimensions[0] * 24
+
+    # creations des structures de données
+    grille_rect = [[[] for j in range(dimensions[0])] for i in range(dimensions[1])]
+    grille_bomb = [[0 for j in range(dimensions[0])] for i in range(dimensions[1])]
+    grille_flag = [[False for j in range(dimensions[0])] for i in range(dimensions[1])]
+    vu = [[False for j in range(dimensions[0])] for i in range(dimensions[1])]
+    first_click = True
+    perdu = False
+    while not perdu:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT: 
+                sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                
+
+    
 
 
-
-
-
-
-
-
-
-
-dimensions = [9,9]
-nb_mine = 10
-
-bord_g = 20
-bord_h = 100
-
-size = width, height = bord_g * 2 + dimensions[0] * 24, bord_g + bord_h + dimensions[0] * 24
-
-# creations des structures de données
-grille_rect = [[[] for j in range(dimensions[0])] for i in range(dimensions[1])]
-grille_bomb = [[0 for j in range(dimensions[0])] for i in range(dimensions[1])]
-grille_flag = [[False for j in range(dimensions[0])] for i in range(dimensions[1])]
-vu = [[False for j in range(dimensions[0])] for i in range(dimensions[1])]
-
-
+ pygame.display.flip()
 
 
 
