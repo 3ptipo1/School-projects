@@ -1,28 +1,44 @@
 import pygame
 import random
+import sys
 pygame.init()
 
+
+
+
 def change_image(x,y):
+    # chargement et utilisation des images
+    case_drapeau = pygame.image.load("./images/drapeau.png")
+    case_bombe = pygame.image.load("./images/mine.png")
+    case_bombe_rouge = pygame.image.load("./images/mine_oups.png")
+    case_drapeau_rate = pygame.image.load("./images/mine_pas_la.png")
+    case_pleine = pygame.image.load("./images/grille.png")
+    image_nombre = []
+    for indice in range(9):
+        image_nombre.append(pygame.image.load("./images/g"+ str(indice) +".png"))
+
+
+    global grille_flag, grille_bomb, grille_rect, vu
     change = [(x,y)]
     if vu[x][y]:
         return []
     if grille_flag[x][y]:
-        grille_rect[x][y][0] = 0 #mettre une image de drapeau
+        grille_rect[x][y][0] = case_drapeau 
     elif grille_bomb[x][y] != -1:
-        grille_rect[x][y][0] = 0#mettre une image en fonction de grille_bomb[x][y]
+        grille_rect[x][y][0] = image_nombre[grille_bomb[x][y]]
         vu[x][y] = True
     else:
         global perdu
         perdu = True
         grille_bomb[x][y] = -42
-        grille_rect[x][y][0] = 0#mettre image bombe rouge
+        grille_rect[x][y][0] = case_bombe_rouge
         for coord1 in range(dimensions[0]):
             for coord2 in range(dimensions[1]):
                 if grille_flag[coord1][coord2] and grille_bomb[coord1][coord2] != -1:
-                    grille_rect[coord1][coord2][0] = 0 #mettre image bombe pas la
+                    grille_rect[coord1][coord2][0] = case_drapeau_rate
                     change.append((coord1,coord2))
                 elif grille_bomb[coord1][coord2] == -1 and not grille_flag[coord1][coord2]:
-                    grille_rect[coord1][coord2][0] = 0#mettre image bombe
+                    grille_rect[coord1][coord2][0] = case_bombe
                     change.append((coord1,coord2))
     return change
 
@@ -33,17 +49,20 @@ def decouverte(x,y):
 
 
 def set_mines(pos, nb_mine):
-    for i in range(nb_mine):
-        x,y = random.randint(0, dimensions[0]), random.randint(0, dimensions[1])
+    for create_mine in range(nb_mine):
+        x,y = random.randint(0, dimensions[0]-1), random.randint(0, dimensions[1]-1)
         c = 0
+        a_cote = False
         for pg in range(-1,2):
             for pb in range(-1,2):
                 if (x+pg,y+pb) == pos:
                     a_cote = True
         while grille_bomb[x][y] == -1 or a_cote:
+            print(x,y,"     ",grille_bomb[x][y] == -1,"      ",a_cote, "    ", c )
+            a_cote = False
             c += 1
-            assert c >= 50, "Il y a peut etre trop de bombes..."
-            x,y = random.randint(0, dimensions[0]), random.randint(0, dimensions[1])
+            assert c <= 50, "Il y a peut etre trop de bombes..."
+            x,y = random.randint(0, dimensions[0]-1), random.randint(0, dimensions[1]-1)
             for pg in range(-1,2):
                 for pb in range(-1,2):
                     if (x+pg,y+pb) == pos:
@@ -70,53 +89,78 @@ def set_valeur_case_safe():
 
 
 def pied():
+    global dimensions, grille_bomb, grille_flag, grille_rect, vu, perdu
     dimensions = [9,9]
     nb_mine = 10
-    taille_case = 24
+    taille_case = 32
 
     bord_g = 20
     bord_h = 100
 
     size = width, height = bord_g * 2 + dimensions[0] * taille_case, bord_g + bord_h + dimensions[1] * taille_case
+    
+    #initialisation des images
+    case_pleine = pygame.image.load("./images/grille.png")
 
     # creation des structures de données
-    grille_rect = [[[] for j in range(dimensions[0])] for i in range(dimensions[1])]
-    grille_bomb = [[0 for j in range(dimensions[0])] for i in range(dimensions[1])]
-    grille_flag = [[False for j in range(dimensions[0])] for i in range(dimensions[1])]
-    vu = [[False for j in range(dimensions[0])] for i in range(dimensions[1])]
+    grille_rect = [[[case_pleine, case_pleine.get_rect(topleft=(bord_g + j*taille_case, bord_h + i*taille_case))] for j in range(dimensions[1])] for i in range(dimensions[0])]
+    grille_bomb = [[0 for j in range(dimensions[1])] for i in range(dimensions[0])]
+    grille_flag = [[False for j in range(dimensions[1])] for i in range(dimensions[0])]
+    vu = [[False for j in range(dimensions[1])] for i in range(dimensions[0])]
     first_click = True
     perdu = False
 
     # création des rect
     screen = pygame.display.set_mode(size)
     screen.fill((198, 198, 198))
-    rect_board = pygame.Rect(bord_g, bord_h, dimensions[0] * taille_case, dimensions[1] * taille_case)
+    rect_board = pygame.Rect(bord_g, bord_h, dimensions[1] * taille_case, dimensions[0] * taille_case)
     board =  pygame.draw.rect(screen, (128,128,128) , rect_board) 
+    for ligne in grille_rect:
+        for objet in ligne:
+            screen.blit(objet[0], objet[1])
+    
     pygame.display.flip()
     
     while not perdu:
+        coord_a_update = []
         for event in pygame.event.get():
             if event.type == pygame.QUIT: 
                 sys.exit()
             if event.type == pygame.KEYDOWN:
-                if event.key == K_ESCAPE:
+                if event.key == pygame.K_ESCAPE:
                     return -1
             if event.type == pygame.MOUSEBUTTONDOWN:
-                x,y = event.pos[0]// taille_case, event.pos[1]//taille_case 
+                x,y = (event.pos[1] - bord_h)// taille_case, (event.pos[0] - bord_g)//taille_case 
+                #print(event.pos, x, y)
                 if board.collidepoint(event.pos):
                     if first_click:
                         first_click = False
                         set_mines((x,y), nb_mine)
                         set_valeur_case_safe()
                         decouverte(x,y)
-                    else:
-                        if pygame.mouse.get_pressed()[1] == 1:
-                            if not vu[x][y]:
-                                grille_flag[x][y] = not grille_flag[x][y]
-                        a_update = change_image(x,y)
-                        
-                    
-    pygame.display.flip()
+                
+                    if pygame.mouse.get_pressed()[0] == 1:
+                        print("htzhjrt")
+                        for i in range(dimensions[0]):
+                            for j in range(dimensions[1]):
+                                print(grille_bomb[i][j], end="")
+                            print("")
+                        if not vu[x][y]:
+                            grille_flag[x][y] = not grille_flag[x][y]
+                        coord_a_update = change_image(x,y)
+        rect_a_update = []
+        for x,y in coord_a_update:
+            rect_a_update.append(screen.blit(grille_rect[x][y][0], grille_rect[x][y][1]))
+        rect_a_update.append(None)
+        pygame.display.update(rect_a_update)            
+    while 1: 
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT: 
+                sys.exit()              
+   # pygame.display.flip()
+
+pied()
+
 
 
 
