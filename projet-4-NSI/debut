@@ -1,12 +1,19 @@
+#encoding utf-8
+'''
+Auteurs : BARRETEAU-BAREIL Thilbault / DEPRES Adrien / PETIT Gildas
+'''
 import pygame
 import random
 import sys
+from collections import deque
 pygame.init()
 
 
 
 
-def change_image(x,y):
+def change_image(x,y, deflag = False):
+    '''
+    '''
     # chargement et utilisation des images
     case_drapeau = pygame.image.load("./images/drapeau.png")
     case_bombe = pygame.image.load("./images/mine.png")
@@ -18,15 +25,18 @@ def change_image(x,y):
         image_nombre.append(pygame.image.load("./images/g"+ str(indice) +".png"))
 
 
-    global grille_flag, grille_bomb, grille_rect, vu
+    global grille_flag, grille_bomb, grille_rect, vu, nb_case_safe
     change = [(x,y)]
     if vu[x][y]:
         return []
-    if grille_flag[x][y]:
+    if deflag:
+        grille_rect[x][y][0] = case_pleine
+    elif grille_flag[x][y]:
         grille_rect[x][y][0] = case_drapeau 
     elif grille_bomb[x][y] != -1:
         grille_rect[x][y][0] = image_nombre[grille_bomb[x][y]]
         vu[x][y] = True
+        nb_case_safe -= 1
     else:
         global perdu
         perdu = True
@@ -44,11 +54,32 @@ def change_image(x,y):
 
 
 
-def decouverte(x,y):
-    pass
+def decouverte(coord1,coord2):
+    ordre = deque()
+    secu = 0
+    ordre.append((coord1,coord2))
+    coord_a_update = []
+    case_traitee = [[False for j in range(dimensions[1])] for i in range(dimensions[0])]
+    case_traitee[coord1][coord2] = True
+    while ordre and secu < dimensions[0] * dimensions[1]:
+        x,y = ordre.popleft()
+        coord_a_update.extend(change_image(x,y))
+        if grille_bomb[x][y] != 0:
+            continue
+        for pg in range(-1,2):
+            for pb in range(-1,2):
+                if 0 <= x+pg < dimensions[0] and 0 <= y+pb < dimensions[1]:
+                    if not case_traitee[x+pg][y+pb] and grille_bomb[x+pg][y+pb] != -1:
+                        case_traitee[x+pg][y+pb] = True
+                        ordre.append((x+pg,y+pb))
+    return coord_a_update
+
+
 
 
 def set_mines(pos, nb_mine):
+    '''
+    '''
     for create_mine in range(nb_mine):
         x,y = random.randint(0, dimensions[0]-1), random.randint(0, dimensions[1]-1)
         c = 0
@@ -70,6 +101,7 @@ def set_mines(pos, nb_mine):
         grille_bomb[x][y] = -1
 
 def set_valeur_case_safe():
+    ''''''
     for i in range(dimensions[0]):
         for j in range(dimensions[1]):
             if grille_bomb[i][j] != -1:
@@ -89,18 +121,22 @@ def set_valeur_case_safe():
 
 
 def pied():
-    global dimensions, grille_bomb, grille_flag, grille_rect, vu, perdu
-    dimensions = [9,9]
-    nb_mine = 10
+    global dimensions, grille_bomb, grille_flag, grille_rect, vu, perdu, nb_case_safe
+    dimensions = [10,8]
+    nb_mine = 20
     taille_case = 32
+    nb_case_safe = dimensions[0] * dimensions[1] - nb_mine
 
     bord_g = 20
-    bord_h = 100
+    bord_h = 80
 
-    size = width, height = bord_g * 2 + dimensions[0] * taille_case, bord_g + bord_h + dimensions[1] * taille_case
+    size = width, height = bord_g * 2 + dimensions[1] * taille_case, bord_g + bord_h + dimensions[0] * taille_case
     
     #initialisation des images
     case_pleine = pygame.image.load("./images/grille.png")
+    smiley = pygame.image.load("./images/head1.png")
+    smiley_no = pygame.image.load("./images/head2.png")
+    smiley_yay = pygame.image.load("./images/head3.png")
 
     # creation des structures de données
     grille_rect = [[[case_pleine, case_pleine.get_rect(topleft=(bord_g + j*taille_case, bord_h + i*taille_case))] for j in range(dimensions[1])] for i in range(dimensions[0])]
@@ -113,6 +149,9 @@ def pied():
     # création des rect
     screen = pygame.display.set_mode(size)
     screen.fill((198, 198, 198))
+    rect_smiley = smiley.get_rect()
+    rect_smiley.topleft = (width//2 - 19, bord_h//2 - 20)
+    screen.blit(smiley, rect_smiley)
     rect_board = pygame.Rect(bord_g, bord_h, dimensions[1] * taille_case, dimensions[0] * taille_case)
     board =  pygame.draw.rect(screen, (128,128,128) , rect_board) 
     for ligne in grille_rect:
@@ -121,7 +160,7 @@ def pied():
     
     pygame.display.flip()
     
-    while not perdu:
+    while not perdu and nb_case_safe != 0:
         coord_a_update = []
         for event in pygame.event.get():
             if event.type == pygame.QUIT: 
@@ -132,22 +171,27 @@ def pied():
             if event.type == pygame.MOUSEBUTTONDOWN:
                 x,y = (event.pos[1] - bord_h)// taille_case, (event.pos[0] - bord_g)//taille_case 
                 #print(event.pos, x, y)
-                if board.collidepoint(event.pos):
-                    if first_click:
-                        first_click = False
-                        set_mines((x,y), nb_mine)
-                        set_valeur_case_safe()
-                        decouverte(x,y)
-                
+                if board.collidepoint(event.pos):                
                     if pygame.mouse.get_pressed()[0] == 1:
-                        print("htzhjrt")
-                        for i in range(dimensions[0]):
-                            for j in range(dimensions[1]):
-                                print(grille_bomb[i][j], end="")
-                            print("")
+                        if first_click:
+                            first_click = False
+                            set_mines((x,y), nb_mine)
+                            set_valeur_case_safe()
+                            coord_a_update = decouverte(x,y)
+                        elif grille_bomb[x][y] == 0:
+                            coord_a_update = decouverte(x,y)
+                        else:
+                            coord_a_update = change_image(x,y)
+                    elif pygame.mouse.get_pressed()[2] == 1:
                         if not vu[x][y]:
                             grille_flag[x][y] = not grille_flag[x][y]
-                        coord_a_update = change_image(x,y)
+                            if grille_flag[x][y]: 
+                                coord_a_update = change_image(x,y)
+                            else:
+                                coord_a_update = change_image(x,y,True)
+                                
+
+                        
         rect_a_update = []
         for x,y in coord_a_update:
             rect_a_update.append(screen.blit(grille_rect[x][y][0], grille_rect[x][y][1]))
@@ -159,8 +203,14 @@ def pied():
                 sys.exit()              
    # pygame.display.flip()
 
+#                        print("htzhjrt")
+#                        for i in range(dimensions[0]):
+#                            for j in range(dimensions[1]):
+#                                print(grille_bomb[i][j], end="")
+#                            print("")
+
+
+
+
+
 pied()
-
-
-
-
