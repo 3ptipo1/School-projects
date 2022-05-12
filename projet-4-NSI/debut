@@ -25,14 +25,16 @@ def change_image(x,y, deflag = False):
         image_nombre.append(pygame.image.load("./images/g"+ str(indice) +".png"))
 
 
-    global grille_flag, grille_bomb, grille_rect, vu, nb_case_safe
+    global grille_flag, grille_bomb, grille_rect, vu, nb_case_safe, nb_flag
     change = [(x,y)]
     if vu[x][y]:
         return []
     if deflag:
         grille_rect[x][y][0] = case_pleine
+        nb_flag -= 1
     elif grille_flag[x][y]:
-        grille_rect[x][y][0] = case_drapeau 
+        grille_rect[x][y][0] = case_drapeau
+        nb_flag += 1 
     elif grille_bomb[x][y] != -1:
         grille_rect[x][y][0] = image_nombre[grille_bomb[x][y]]
         vu[x][y] = True
@@ -53,14 +55,31 @@ def change_image(x,y, deflag = False):
     return change
 
 
+def afficher_changements(coord_a_update):
+    global screen
+    rect_a_update = []
+    for x,y in coord_a_update:
+        rect_a_update.append(screen.blit(grille_rect[x][y][0], grille_rect[x][y][1]))
+    rect_a_update.append(None)
+    pygame.display.update(rect_a_update)            
+
+
 
 def decouverte(coord1,coord2):
+    '''
+    Fonction (faussement récursive) permettant d'afficher les cases 
+    qui n'ont pas de mines à coté et les cases à cotés d'elles
+    Entrées:
+        - coord1 / coord2 (int) : 
+    '''
     ordre = deque()
     secu = 0
-    ordre.append((coord1,coord2))
+    ordre.append((coord1,coord2)) 
     coord_a_update = []
     case_traitee = [[False for j in range(dimensions[1])] for i in range(dimensions[0])]
     case_traitee[coord1][coord2] = True
+    # c'est un parcours en largeur qui utilise une file (FIFO) et un while 
+    # (La recursivité en python c'est bien que pour les arbres, binaires de preference) 
     while ordre and secu < dimensions[0] * dimensions[1]:
         x,y = ordre.popleft()
         coord_a_update.extend(change_image(x,y))
@@ -74,11 +93,40 @@ def decouverte(coord1,coord2):
                         ordre.append((x+pg,y+pb))
     return coord_a_update
 
+def draw(nb, rect):
+    '''
+    Procédure gérant les compteurs de mines et de temps
+    Entrée :
+        - nb (int) : le nombre à afficher
+        - rect (rect) : le rectangle dans lequel on va afficher du texte
+    '''
+    global screen
+    font = pygame.font.Font("Segment7Standard.otf", 32)
+    pygame.draw.rect(screen, (0,0,0), rect)
+    a_print = ""
+    if nb//1000 == 0:
+        a_print += str(0)
+    if nb//100 == 0:
+        a_print += str(0)
+    if nb//10 == 0:
+        a_print += str(0)
+    a_print += str(nb)
+    text = font.render(a_print, True, (255,0,0))
+    rect_text = text.get_rect()
+    rect_text.topleft = (rect.x + 1, rect.y + 5)
+    screen.blit(text, rect_text)
+    pygame.display.update([rect_text])
+
 
 
 
 def set_mines(pos, nb_mine):
     '''
+    Precédure permettant de générer les mines dans la grille 
+    en evitant la position du premier clic
+    Entrée : 
+        - pos (tuple de int) : la position en coordonnées du clic dans la grille
+        - nb_mine (int) : le nombre de mines a poser 
     '''
     for create_mine in range(nb_mine):
         x,y = random.randint(0, dimensions[0]-1), random.randint(0, dimensions[1]-1)
@@ -89,7 +137,7 @@ def set_mines(pos, nb_mine):
                 if (x+pg,y+pb) == pos:
                     a_cote = True
         while grille_bomb[x][y] == -1 or a_cote:
-            print(x,y,"     ",grille_bomb[x][y] == -1,"      ",a_cote, "    ", c )
+            #print(x,y,"     ",grille_bomb[x][y] == -1,"      ",a_cote, "    ", c )
             a_cote = False
             c += 1
             assert c <= 50, "Il y a peut etre trop de bombes..."
@@ -101,7 +149,10 @@ def set_mines(pos, nb_mine):
         grille_bomb[x][y] = -1
 
 def set_valeur_case_safe():
-    ''''''
+    '''
+    Procédure permettant de calculer, pour chaque case, 
+    le nombre de mines à coté
+    '''
     for i in range(dimensions[0]):
         for j in range(dimensions[1]):
             if grille_bomb[i][j] != -1:
@@ -116,14 +167,26 @@ def set_valeur_case_safe():
         
 
 
-
-
-
-
-def pied():
-    global dimensions, grille_bomb, grille_flag, grille_rect, vu, perdu, nb_case_safe
-    dimensions = [10,8]
-    nb_mine = 20
+def minesweeper_classic(diff):
+    '''
+    Fonction lançant le fenetre de démineur et gérant l'interaction avec l'utilisateur
+    Entrée :
+        - diff (str) : la difficulté du démineur, ce qui permet de récupérer 
+                            les dimensions et le nombre de mines
+    Sortie :
+        - ((bool): est-ce que le joueur veut continuer a jouer ,
+           (str): Le mode avec lequel le joueur veut rejouer
+            )
+    '''
+    global grille_bomb, grille_flag, grille_rect, vu
+    global dimensions, perdu, nb_case_safe, screen, nb_flag
+    stats_difficulte = {
+        "D":([9,9], 10),
+        "I":([16,16], 40),
+        "E":([16,32], 99)
+    }
+    dimensions, nb_mine = stats_difficulte[diff]
+    print(dimensions)
     taille_case = 32
     nb_case_safe = dimensions[0] * dimensions[1] - nb_mine
 
@@ -135,8 +198,7 @@ def pied():
     #initialisation des images
     case_pleine = pygame.image.load("./images/grille.png")
     smiley = pygame.image.load("./images/head1.png")
-    smiley_no = pygame.image.load("./images/head2.png")
-    smiley_yay = pygame.image.load("./images/head3.png")
+    
 
     # creation des structures de données
     grille_rect = [[[case_pleine, case_pleine.get_rect(topleft=(bord_g + j*taille_case, bord_h + i*taille_case))] for j in range(dimensions[1])] for i in range(dimensions[0])]
@@ -145,13 +207,20 @@ def pied():
     vu = [[False for j in range(dimensions[1])] for i in range(dimensions[0])]
     first_click = True
     perdu = False
+    nb_flag = 0
 
     # création des rect
     screen = pygame.display.set_mode(size)
     screen.fill((198, 198, 198))
     rect_smiley = smiley.get_rect()
     rect_smiley.topleft = (width//2 - 19, bord_h//2 - 20)
-    screen.blit(smiley, rect_smiley)
+    smiley_button = screen.blit(smiley, rect_smiley)
+    
+    rect_nb_bomb = pygame.Rect(bord_g, bord_h//2 - 17, 80, 36)
+    rect_timer = pygame.Rect(width - bord_g - 80, bord_h//2 - 17, 80, 36)
+    pygame.draw.rect(screen, (0,0,0), rect_timer)
+    pygame.draw.rect(screen, (0,0,0), rect_nb_bomb)
+
     rect_board = pygame.Rect(bord_g, bord_h, dimensions[1] * taille_case, dimensions[0] * taille_case)
     board =  pygame.draw.rect(screen, (128,128,128) , rect_board) 
     for ligne in grille_rect:
@@ -159,7 +228,11 @@ def pied():
             screen.blit(objet[0], objet[1])
     
     pygame.display.flip()
-    
+    draw(0, rect_timer)
+    draw(nb_mine, rect_nb_bomb)
+    sec = 0
+    timer = pygame.time.Clock()
+    timer_active = False
     while not perdu and nb_case_safe != 0:
         coord_a_update = []
         for event in pygame.event.get():
@@ -167,17 +240,27 @@ def pied():
                 sys.exit()
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
-                    return -1
+                    return (False, diff)
+                elif event.key == pygame.K_d :
+                    return (True, "D")
+                elif event.key == pygame.K_i :
+                    return (True, "I")
+                elif event.key == pygame.K_e :
+                    return (True, "E")
+                    
             if event.type == pygame.MOUSEBUTTONDOWN:
                 x,y = (event.pos[1] - bord_h)// taille_case, (event.pos[0] - bord_g)//taille_case 
                 #print(event.pos, x, y)
                 if board.collidepoint(event.pos):                
                     if pygame.mouse.get_pressed()[0] == 1:
-                        if first_click:
+                        if first_click: # genere la grille au premier click (Bombes + numeros)
                             first_click = False
                             set_mines((x,y), nb_mine)
                             set_valeur_case_safe()
                             coord_a_update = decouverte(x,y)
+                            timer.tick()
+                            sec = 0 
+                            timer_active = True
                         elif grille_bomb[x][y] == 0:
                             coord_a_update = decouverte(x,y)
                         else:
@@ -189,28 +272,50 @@ def pied():
                                 coord_a_update = change_image(x,y)
                             else:
                                 coord_a_update = change_image(x,y,True)
-                                
-
+                elif smiley_button.collidepoint(event.pos):
+                    return (True, diff)
+        if timer_active:
+            draw(max(0,nb_mine - nb_flag), rect_nb_bomb)
+            sec += timer.tick()
+            draw(sec//1000, rect_timer)            
+        afficher_changements(coord_a_update)
                         
-        rect_a_update = []
-        for x,y in coord_a_update:
-            rect_a_update.append(screen.blit(grille_rect[x][y][0], grille_rect[x][y][1]))
-        rect_a_update.append(None)
-        pygame.display.update(rect_a_update)            
+
+    if perdu:
+        smiley = pygame.image.load("./images/head2.png")
+    else:
+        draw(0, rect_nb_bomb)
+        drapeau_reveles = []
+        smiley = pygame.image.load("./images/head3.png")
+        for coord1 in range(dimensions[0]):
+            for coord2 in range(dimensions[1]):
+                if grille_bomb[coord1][coord2] == -1:
+                    grille_flag[coord1][coord2] = True
+                    drapeau_reveles.extend(change_image(coord1,coord2))
+        afficher_changements(drapeau_reveles)
+
+
+    smiley_button = screen.blit(smiley, rect_smiley)
+    pygame.display.update(smiley_button)
     while 1: 
         for event in pygame.event.get():
             if event.type == pygame.QUIT: 
-                sys.exit()              
-   # pygame.display.flip()
+                sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if smiley_button.collidepoint(event.pos):
+                    return (True, diff) 
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    return (False, diff)            
+                elif event.key == pygame.K_d :
+                    return (True, "D")
+                elif event.key == pygame.K_i :
+                    return (True, "I")
+                elif event.key == pygame.K_e :
+                    return (True, "E")
 
-#                        print("htzhjrt")
-#                        for i in range(dimensions[0]):
-#                            for j in range(dimensions[1]):
-#                                print(grille_bomb[i][j], end="")
-#                            print("")
-
-
-
-
-
-pied()
+safety_mesure = 0 # Faut pas faire trop de parties quand même !
+result = minesweeper_classic("D")
+while result[0] and safety_mesure < 4200:
+    result = minesweeper_classic(result[1])
+    safety_mesure += 1
